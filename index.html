@@ -5,6 +5,7 @@ It should help If you want to experiment with things browsers can or cannot do.
 <!DOCTYPE html>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>DOM Console</title>
         <style>
         #domConsole{
@@ -46,6 +47,14 @@ It should help If you want to experiment with things browsers can or cannot do.
 
         <input id='commandLine' style="width:100%;font-family:consolas,monospace,Arial, Helvetica, sans-serif" onkeydown="">
         <button onclick="commandLine.onkeydown({key:'Enter'})">Execute</button>
+        
+            <button style="margin-left:5px" onclick="commandLine.onkeydown({key:'ArrowUp'})">Prev</button><button onclick="commandLine.onkeydown({key:'ArrowUp'})">Next</button>
+        <span style="margin-left:10px">
+        <select id='injectSelect'>
+            <option>jQuery</option>
+        </select> <button onclick="injectionList[injectSelect.selectedIndex]()">Inject</button><br>
+        </span>
+        <input type="checkbox" id='scrollBottomCheck' checked>Scroll to bottom
 
         <script>
         domConsole.style.height = screen.height * .2+"px";
@@ -53,21 +62,37 @@ It should help If you want to experiment with things browsers can or cannot do.
         //Attempting to fully support the console would be tricky; I'm going to primarliy focus on specifc commands for now...
         //The capability of rewriting most javascript functions is vital to this page:
 
-        let commandHistory = [];
-        let commandIndex = -1;
+        /*RULE OF THUMB! My target legacy device (3DS) does not support the following:
+        Arrow functions
+        let
+
+        Therefore, these nice things won't be used for creating the console :(
+        */
+
+        var commandHistory = [];
+        var commandIndex = -1;
+
+        injectionList = [
+        function(){ 
+            var jq = document.createElement("script");
+            jq.src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js";
+            document.body.appendChild(jq); 
+            console.warn("jQuery was just inserted into the page");
+            }
+        ]
         //Format the output for an object/array into html:
         function parseObject(objIn){
-            let result = "";
+            var result = "";
             if(objIn.length!==undefined){
                     result+="[";
-                    objIn.forEach((e,index)=>{
+                    objIn.forEach(function(e,index){
                         result+=(index?",":"")+"<span class='objValue'>"+e+"</span>";
                     });
                     result+="]";
                 }
             else {
                 result+='{';
-                Object.keys(objIn).forEach((e,index)=>{
+                Object.keys(objIn).forEach(function(e,index){
                     result+=(index?",":"")+"<span class='objKey'>"+e+"</span>:<span class='objValue'>"+objIn[e]+"</span>"
                 });
                 result+="}"
@@ -76,25 +101,25 @@ It should help If you want to experiment with things browsers can or cannot do.
         }
 
         function baseConsoleLog(args,mode){
-            let resultStr = "";
-            let parseNormal = false;
+            var resultStr = "";
+            var parseNormal = false;
             //Adhere to standards:
             if(args.length > 1 && typeof(args[0]) == "string"){
                 //Search for any string substitutions
-                let subList = [/%o/,/%O/,/%d/,/%i/,/%s/,/%f/,/%c/];
-                let foundSub = false;
-                for(let i=0;i<subList.length;i++){
+                var subList = [/%o/,/%O/,/%d/,/%i/,/%s/,/%f/,/%c/];
+                var foundSub = false;
+                for(var i=0;i<subList.length;i++){
                     if(subList[i].test(args[i])){
                         foundSub = true;
                         break;
                     }
                 }
                 if(foundSub){
-                    let completeCss = 0;
-                    let argIndex = 1;
+                    var completeCss = 0;
+                    var argIndex = 1;
                     //As far as my knowledge goes, there's not really a built in method to replace things based on another argument... Let's construct one from scratch (Sub-par >_<):
-                    for(let i=0;i<args[0].length;i++){
-                        let printRegular = false;
+                    for(var i=0;i<args[0].length;i++){
+                        var printRegular = false;
                         if(args[0][i] == "%"){
                             switch(args[0][i+1]){
                                 case "o":
@@ -134,7 +159,7 @@ It should help If you want to experiment with things browsers can or cannot do.
                         }
                     }
                     if(completeCss > 0){
-                        for(let i=0;i<completeCss;i++)
+                        for(var i=0;i<completeCss;i++)
                             resultStr+="</span>";
                     }
                 }
@@ -143,12 +168,13 @@ It should help If you want to experiment with things browsers can or cannot do.
             }
             else parseNormal = true;
 
-            if(parseNormal) for(let i=0;i<args.length;i++)
+            if(parseNormal) for(var i=0;i<args.length;i++)
                         resultStr+=(i!=0?"<span class='append'> - </span>":"")+
                         (typeof(args[i]) == "object"?parseObject(args[i]):typeof(args[i]) == "undefined"?"<span class='undefined'>"+args[i]+"</span>":""+args[i] );
 
             //Finally:Take a peak to see what version of the console is being called:
             domConsole.innerHTML+="<div class='log"+(mode=="warn"?" warn":mode=="error"?" error":"")+"'>"+resultStr+"</div><br>";
+            if(scrollBottomCheck.checked) domConsole.scrollTo(0,domConsole.scrollHeight);
         }
 
         //The myth, the legend... CONSOLE.LOG (https://developer.mozilla.org/en-US/docs/Web/API/console#Outputting_text_to_the_console)
@@ -163,7 +189,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             baseConsoleLog(arguments,"error");
         }
 
-        console.clear = ()=>domConsole.innerHTML="<div class='undefined'><i>Console was cleared starting here.</i></div>";
+        console.clear = function(){domConsole.innerHTML="<div class='undefined'><i>Console was cleared starting here.</i></div>"};
 
         //DOM configuration:
         commandLine.onkeydown = function(){
@@ -175,7 +201,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             commandIndex = commandHistory.length-1;
             }
             else{
-                let arrows = false;
+                var arrows = false;
                 switch(arguments[0].key){
                     case "ArrowUp":
                     commandIndex-=1;
