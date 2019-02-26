@@ -54,7 +54,9 @@ It should help If you want to experiment with things browsers can or cannot do.
             <option>jQuery</option>
         </select> <button onclick="injectionList[injectSelect.selectedIndex]()">Inject</button><br>
         </span>
-        <input type="checkbox" id='scrollBottomCheck' checked>Scroll to bottom
+        <input type="checkbox" id='scrollBottomCheck' checked>Scroll to bottom<br>
+        <input type="checkbox" onclick='swapConsoles(this.checked)' checked>Use DomConsole for output.<br>
+
 
         <script>
         domConsole.style.height = screen.height * .2+"px";
@@ -109,7 +111,7 @@ It should help If you want to experiment with things browsers can or cannot do.
                 var subList = [/%o/,/%O/,/%d/,/%i/,/%s/,/%f/,/%c/];
                 var foundSub = false;
                 for(var i=0;i<subList.length;i++){
-                    if(subList[i].test(args[i])){
+                    if(subList[i].test(args[0])){
                         foundSub = true;
                         break;
                     }
@@ -177,19 +179,36 @@ It should help If you want to experiment with things browsers can or cannot do.
             if(scrollBottomCheck.checked) domConsole.scrollTo(0,domConsole.scrollHeight);
         }
 
-        //The myth, the legend... CONSOLE.LOG (https://developer.mozilla.org/en-US/docs/Web/API/console#Outputting_text_to_the_console)
-        console.log = function(){
-            baseConsoleLog(arguments);
+        //Store the original functions here, as well as the DomConsole replacements:
+        var consoleLogFuncs = {
+            original:{
+                log:console.log,
+                warn:console.warn,
+                error:console.error,
+                clear:console.clear
+            },
+            domConsole:{
+                //The myth, the legend... CONSOLE.LOG (https://developer.mozilla.org/en-US/docs/Web/API/console#Outputting_text_to_the_console)
+                log:function(){
+                    baseConsoleLog(arguments);
+                },
+                warn:function(){
+                    baseConsoleLog(arguments,"warn");
+                },
+                error:function(){
+                   baseConsoleLog(arguments,"error");
+                },
+                clear:function(){domConsole.innerHTML="<div class='undefined'><i>Console was cleared starting here.</i></div>"},
+            }
         }
 
-        console.warn = function(){
-            baseConsoleLog(arguments,"warn");
+        //Upon hitting the associated checkbox, the user can use the DomConsole, or the one built in to the browser:
+        function swapConsoles(domReal){
+            var targetGroup = domReal?"domConsole":"original";
+            Object.keys(consoleLogFuncs[targetGroup]).forEach(function(e){
+                console[e] = consoleLogFuncs[targetGroup][e];
+            });
         }
-        console.error = function(){
-            baseConsoleLog(arguments,"error");
-        }
-
-        console.clear = function(){domConsole.innerHTML="<div class='undefined'><i>Console was cleared starting here.</i></div>"};
 
         //DOM configuration:
         commandLine.onkeydown = function(){
@@ -221,6 +240,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             }
         }
 
+        swapConsoles(true);
         </script>
     </body>
 </html>
