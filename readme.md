@@ -7,6 +7,7 @@ Legacy Web browsers (Such as the Nintendo 3DS browser, based off of webkit) are 
 As of right now, I don't intend to re-create *all* console functions. Rather, functions that are used frequently will be re-programmed to work with DOM Console.
 
 ## USAGE
+*To access this page without downloading it, visit (https://zachmitchell.github.io/DomConsole)*
 * The text field on the bottom is your command line! Type in whatever, and returned elements enter the pseudo console above
 * That dashed square on top is `#sandbox`. You can place your html elements up there.
 
