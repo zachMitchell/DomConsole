@@ -20,20 +20,17 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Similar input methods to a developer console (F12 on Chrome)
 1. Variable initiation
 1. Popular Javascript plugin injection
+1. Hot-swapping between a real console and DOM Console
+1. A text-field for executing longer code.
 
 ### In the works
 1. `console.table`
 1. `console.group`
-1. Hot-swapping between a real console and DOM Console
-
-### Backlog
-1. A text-field for executing longer code.
 1. Temporary script Storage
 
 ### Dream features
 **These are features I can't implement at this time, due to various reasons (e.g backend required, lack of legacy browser support)**
 1. Cloud storage (Preferrably [solid pod](https://inrupt.com/solid))
-1.
 
 ## Issues
 Not all errors will appear in DOM Console. This is because `console.error` is not used when running a traceback on web browsers. I could be wrong on this, but until then, error messages only run if manually created by the developer (`console.error()`);

@@ -13,6 +13,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             resize: both;
             font-family:Arial, Helvetica, sans-serif;
             border:1px solid black;
+            -webkit-overflow-scrolling:touch;
         }
         #domConsole .log,.warn,.error{
             border-bottom: 2px dashed skyblue;
@@ -24,9 +25,14 @@ It should help If you want to experiment with things browsers can or cannot do.
             border:3px dashed red;
         }
 
+        #domConsole div{
+            margin-bottom:10px;
+        }
+
         #domConsole .objKey,.append{
             color:gray;
         }
+
         #domConsole .objValue{
             color:crimson;
         }
@@ -37,30 +43,42 @@ It should help If you want to experiment with things browsers can or cannot do.
             border:5px dashed gray;
             width: 99%;
         }
+        #scriptField{
+          width:100%;
+          font-family:consolas,monospace;
+        }
         </style>
     </head>
     <body>
         <div id="sandbox"></div>
 
         <!--This is output from our pseudo console-->
-        <div id="domConsole"></div>
+        <div id="domConsole"></div><br>
+        <div id="scriptFieldContainer" style='display:none'>
+          <textarea id='scriptField' type="text" placeholder="Writer longer code here. You can save it for later by clicking a 'Save' button"></textarea><br>
+          <button onclick='(Function(scriptField.value)());'>Run</button>
+          <input id='scriptName'><button onclick='localStoreSave()' class='localStorage'>Save to localStorage</button><span style="margin-left:20px" class='localStorage'><select id='scriptLSCode'></select> localStorage <button onclick="lsDeleteCurrItem()"">(Delete)</button></span>
+        </div>
 
-        <input id='commandLine' style="width:100%;font-family:consolas,monospace,Arial, Helvetica, sans-serif" onkeydown="">
+        <input id='commandLine' placeholder=">" style="width:100%;font-family:consolas,monospace,Arial, Helvetica, sans-serif" onkeydown="">
         <button onclick="commandLine.onkeydown({key:'Enter'})">Execute</button>
-        
+
             <button style="margin-left:5px" onclick="commandLine.onkeydown({key:'ArrowUp'})">Prev</button><button onclick="commandLine.onkeydown({key:'ArrowUp'})">Next</button>
         <span style="margin-left:10px">
         <select id='injectSelect'>
             <option>jQuery</option>
-        </select> <button onclick="injectionList[injectSelect.selectedIndex]()">Inject</button><br>
+        </select> <button onclick="injectionList[injectSelect.selectedIndex]()">Inject</button>
+        <button style="float:right" id="jsEditButton">Open JavaScript editor</button><br>
         </span>
         <input type="checkbox" id='scrollBottomCheck' checked>Scroll to bottom<br>
         <input type="checkbox" onclick='swapConsoles(this.checked)' checked>Use DomConsole for output.<br>
+        <input type="number" id='logLimit' min=0 value=0 onchange='setConsoleLimit(this.value)'> Limit (0 for unlimited);
 
 
         <script>
         domConsole.style.height = screen.height * .2+"px";
         sandbox.style.height = screen.height * .25+"px";
+        scriptField.style.height = screen.height * .15+"px";
         //Attempting to fully support the console would be tricky; I'm going to primarliy focus on specifc commands for now...
         //The capability of rewriting most javascript functions is vital to this page:
 
@@ -71,14 +89,14 @@ It should help If you want to experiment with things browsers can or cannot do.
         Therefore, these nice things won't be used for creating the console :(
         */
 
-        var commandHistory = [];
+        var commandHistory = [""];
         var commandIndex = -1;
 
         injectionList = [
-        function(){ 
+        function(){
             var jq = document.createElement("script");
             jq.src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js";
-            document.body.appendChild(jq); 
+            document.body.appendChild(jq);
             console.warn("jQuery was just inserted into the page");
             }
         ]
@@ -153,7 +171,7 @@ It should help If you want to experiment with things browsers can or cannot do.
                             }
                         }
                         else printRegular = true;
-                        
+
                         if(printRegular) resultStr+=args[0][i];
                         else {
                             i++;
@@ -175,7 +193,8 @@ It should help If you want to experiment with things browsers can or cannot do.
                         (typeof(args[i]) == "object"?parseObject(args[i]):typeof(args[i]) == "undefined"?"<span class='undefined'>"+args[i]+"</span>":""+args[i] );
 
             //Finally:Take a peak to see what version of the console is being called:
-            domConsole.innerHTML+="<div class='log"+(mode=="warn"?" warn":mode=="error"?" error":"")+"'>"+resultStr+"</div><br>";
+            if(domConsole.children.length >= logLimit.value && logLimit.value!=0) domConsole.removeChild(domConsole.children[0]);
+            domConsole.innerHTML+="<div class='log"+(mode=="warn"?" warn":mode=="error"?" error":"")+"'>"+resultStr+"</div>";
             if(scrollBottomCheck.checked) domConsole.scrollTo(0,domConsole.scrollHeight);
         }
 
@@ -215,9 +234,9 @@ It should help If you want to experiment with things browsers can or cannot do.
             if(arguments[0].key=='Enter'){
             if(/console.clear()/.test(this.value)) eval(this.value); //This is reundant :P
             else if(this.value!="") console.log( eval(this.value) );
-            commandHistory.push(this.value);
+            if(commandIndex!=commandHistory.length-1 || commandIndex == 0) commandHistory.push(this.value); //Don't write another copy of a command if it doesn't change.
             this.value = "";
-            commandIndex = commandHistory.length-1;
+            commandIndex = commandHistory.length;
             }
             else{
                 var arrows = false;
@@ -232,12 +251,84 @@ It should help If you want to experiment with things browsers can or cannot do.
                     break;
                 }
                 if(arrows){
-                    if(commandIndex < 0) commandIndex = commandHistory.length-1;
-                    else if(commandIndex == commandHistory.length) commandIndex--;
+                    if(commandIndex < 0) commandIndex = 0;
+                    else if(commandIndex >= commandHistory.length) commandIndex = commandHistory.length-1;
                     this.value = commandHistory[commandIndex];
                 }
                 else commandIndex = 0;
             }
+        }
+
+        function setConsoleLimit(limit = 0){
+            if(logLimit.value!= limit) logLimit.value = limit;
+            //Apply limit:
+            var targetChildren = domConsole.children;
+
+            if(limit !=0) for(var i=0;i<targetChildren.length - limit;i++)
+                domConsole.removeChild(targetChildren[i]);
+        }
+
+        jsEditButton.onclick = function(){
+            var offOn = scriptFieldContainer.style.display == "none"
+                scriptFieldContainer.style.display = offOn?"":"none";
+                jsEditButton.innerHTML = (offOn?"Close":"Open")+" JavaScript editor";
+        }
+
+        function localStoreSave(){
+            if(!Storage) alert("This browser on "+navigator.platform+" does not support localStorage...");
+            else{
+                scriptName.value = scriptName.value.replace(".","_");
+                localStorage.setItem('domConsole.'+scriptName.value,scriptField.value);
+                var newSave = true;
+                //Look for the id within the select tag, if it doesn't exist, create another one and set it as the current option
+                for(var i=0;i<scriptLSCode.children.length;i++){
+                    if(scriptLSCode.children[i].innerHTML == scriptName.value ){
+                        scriptLSCode.selectedIndex = i;
+                        newSave = false;
+                        break;
+                    }
+                }
+                if(newSave){
+                    var save  = document.createElement("option");
+                    save.value = 'domConsole.'+scriptName.value;
+                    save.innerHTML = scriptName.value;
+                    scriptLSCode.appendChild(save);
+                    scriptLSCode.selectedIndex = scriptLSCode.children.length-1;
+                }
+            }
+        }
+
+        scriptLSCode.onchange = function(){
+            var targetElement = scriptLSCode.children[scriptLSCode.selectedIndex]
+            scriptField.value = localStorage.getItem(targetElement.value);
+            scriptName.value = targetElement.innerHTML;
+        }
+
+        function lsDeleteCurrItem(){
+            var targetElement = scriptLSCode.children[scriptLSCode.selectedIndex];
+            delete localStorage[targetElement.value];
+            scriptLSCode.removeChild(targetElement);
+            scriptLSCode.selectedIndex = -1;
+        }
+
+        //When the page loads, Look through cookies and localStorage to find code snippets:
+        if(Storage)
+        {
+            var keyIndex = 0;
+            while (localStorage.key(keyIndex) !==null){
+                if(/domConsole.*/.test(localStorage.key(keyIndex))){
+                    var newKey = document.createElement("option");
+                    newKey.value = localStorage.key(keyIndex);
+                    newKey.innerHTML = localStorage.key(keyIndex).split(".")[1];
+                    scriptLSCode.appendChild(newKey);
+                }
+                keyIndex++;
+            }
+        }
+        else{
+            var hideThings = document.getElementsByClassName("localStorage");
+            for(var i=0;i<hideThings.length;i++)
+                hideThings[0].style.display = "none";
         }
 
         swapConsoles(true);
