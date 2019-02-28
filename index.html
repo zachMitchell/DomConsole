@@ -55,9 +55,12 @@ It should help If you want to experiment with things browsers can or cannot do.
         <!--This is output from our pseudo console-->
         <div id="domConsole"></div><br>
         <div id="scriptFieldContainer" style='display:none'>
-          <textarea id='scriptField' type="text" placeholder="Writer longer code here. You can save it for later by clicking a 'Save' button"></textarea><br>
+          <textarea id='scriptField' type="text" placeholder="Write longer code here. You can save it for later by clicking a 'Save' button"></textarea><br>
           <button onclick='(Function(scriptField.value)());'>Run</button>
-          <input id='scriptName'><button onclick='localStoreSave()' class='localStorage'>Save to localStorage</button><span style="margin-left:20px" class='localStorage'><select id='scriptLSCode'></select> localStorage <button onclick="lsDeleteCurrItem()"">(Delete)</button></span>
+          <input id='scriptName'><button onclick='localStoreSave()' class='localStorage'>Save to localStorage</button>
+          <span style="margin-left:20px" class='localStorage'>
+              <select id='scriptLSCode'></select> localStorage <button onclick="lsDeleteCurrItem()"">(Delete)</button>
+          </span>
         </div>
 
         <input id='commandLine' placeholder=">" style="width:100%;font-family:consolas,monospace,Arial, Helvetica, sans-serif" onkeydown="">
@@ -85,6 +88,7 @@ It should help If you want to experiment with things browsers can or cannot do.
         /*RULE OF THUMB! My target legacy device (3DS) does not support the following:
         Arrow functions
         let
+        pre-assigned arguments (e.g "function(myArg = 1234)")
 
         Therefore, these nice things won't be used for creating the console :(
         */
@@ -259,7 +263,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             }
         }
 
-        function setConsoleLimit(limit = 0){
+        function setConsoleLimit(limit){
             if(logLimit.value!= limit) logLimit.value = limit;
             //Apply limit:
             var targetChildren = domConsole.children;
@@ -269,13 +273,13 @@ It should help If you want to experiment with things browsers can or cannot do.
         }
 
         jsEditButton.onclick = function(){
-            var offOn = scriptFieldContainer.style.display == "none"
-                scriptFieldContainer.style.display = offOn?"":"none";
-                jsEditButton.innerHTML = (offOn?"Close":"Open")+" JavaScript editor";
+            var offOn = scriptFieldContainer.style.display == "none";
+            scriptFieldContainer.style.display = offOn?"":"none";
+            jsEditButton.innerHTML = (offOn?"Close":"Open")+" JavaScript editor";
         }
 
         function localStoreSave(){
-            if(!Storage) alert("This browser on "+navigator.platform+" does not support localStorage...");
+            if(typeof(Storage) == "undefined" ) alert("This browser on "+navigator.platform+" does not support localStorage...");
             else{
                 scriptName.value = scriptName.value.replace(".","_");
                 localStorage.setItem('domConsole.'+scriptName.value,scriptField.value);
@@ -312,8 +316,7 @@ It should help If you want to experiment with things browsers can or cannot do.
         }
 
         //When the page loads, Look through cookies and localStorage to find code snippets:
-        if(Storage)
-        {
+        if(typeof(Storage) != "undefined" ){
             var keyIndex = 0;
             while (localStorage.key(keyIndex) !==null){
                 if(/domConsole.*/.test(localStorage.key(keyIndex))){
@@ -328,7 +331,7 @@ It should help If you want to experiment with things browsers can or cannot do.
         else{
             var hideThings = document.getElementsByClassName("localStorage");
             for(var i=0;i<hideThings.length;i++)
-                hideThings[0].style.display = "none";
+                hideThings[i].style.display = "none";
         }
 
         swapConsoles(true);
