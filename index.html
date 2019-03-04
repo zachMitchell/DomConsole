@@ -57,9 +57,10 @@ It should help If you want to experiment with things browsers can or cannot do.
         <div id="scriptFieldContainer" style='display:none'>
           <textarea id='scriptField' type="text" placeholder="Write longer code here. You can save it for later by selecting a location and clicking 'Save'"></textarea><br>
           <button onclick='(Function(scriptField.value)());'>Run</button>
-          <input id='scriptName'><button onclick='dataBinder.getActiveMode().save()' id='saveButton'>Save</button>
+          <input id='scriptName' class='saveElement'><button onclick='dataBinder.getActiveMode().save()' id='saveButton' class='saveElement'>Save</button>
+          <span id='snippetSelectContainer'></span>
+          <button onclick="dataBinder.getActiveMode().deleteEntry()" class='saveElement'>Delete</button>
 
-              <span id='snippetSelectContainer'></span> <button onclick="dataBinder.getActiveMode().deleteEntry()">Delete</button>
             <span id='saveMethodContainer' style='display:none'>
                 <input type="radio" name='saveMethod' onchange='dataBinder.swapSaveModes(true)'> Cookies
                 <input type="radio" name='saveMethod' checked onchange='dataBinder.swapSaveModes(false)'> localStorage
@@ -287,11 +288,6 @@ It should help If you want to experiment with things browsers can or cannot do.
         var cookieStuff = {
             //A place where decoded cookies within domConsole.* live. (To save time retrieving stuff)
             cookieCodeCollection:{},
-            //A legacy port of my cookie formula :P
-            cookieSearch:function(regex){
-                var result = document.cookie.split(";").find(function(e){ return regex.test(e)});
-                if(result) return result.split("=")[1];
-            },
             //A new algorhythm to get multiple cookies with similar names (e.g pseudo namespaces like I'm doing)
             getCookiesByRegex:function(regex){
                 var cookieList = document.cookie.split(";");
@@ -379,7 +375,7 @@ It should help If you want to experiment with things browsers can or cannot do.
                 pageLoad:function(){
                     //We first make a test cookie. They're designed for server communication, so if the user is just viewing this file standalone, it won't work.
                     document.cookie = "cookiesWork=1;path=/";
-                    if(cookieStuff.cookieSearch(/cookiesWork/)){
+                    if(document.cookie!=""){
                         this.enabled = true;
                         document.cookie = "cookiesWork=;expires=Thu, 01 Jan 1970 00:00:01 GMT;";
                         var targetSelect = this.snippetSelect;
@@ -394,7 +390,7 @@ It should help If you want to experiment with things browsers can or cannot do.
                     }
                 },
                 save:function(){
-                    if(!this.enabled)alert("Cookies don't work from just this file alone. Upload this file to a server to make cookies work.");
+                    if(!this.enabled)alert("Cookies are either not supported, or you are using this page as a standalone file. Try uploading this webpage to a server to see if cookies work.");
                     else{
                         var newSave = setupSave(dataBinder.cookies);
                         //Save to cookies, but also save to the cookieCodeCollection
@@ -424,19 +420,20 @@ It should help If you want to experiment with things browsers can or cannot do.
             scriptField.value = decodeURIComponent(cookieStuff.cookieCodeCollection[targetElement.value]);
             scriptName.value = targetElement.innerHTML;
         }
-
         //When the page loads, Look through cookies and localStorage to find code snippets:
         //Local storage:
         dataBinder.localStore.pageLoad();
-        //Cookies are next. this isn't the ideal way to save code, but it's the only way on many old browsers without some kind of account system.
+        // //Cookies are next. this isn't the ideal way to save code, but it's the only way on many old browsers without some kind of account system.
         dataBinder.cookies.pageLoad();
         if(dataBinder.cookies.enabled && dataBinder.localStore.enabled){
-            alert("hello?");
             saveMethodContainer.style.display="";
             dataBinder.swapSaveModes(false);
         }
+        else if(!dataBinder.cookies.enabled && !dataBinder.localStore.enabled){
+            var disableElements = document.getElementsByClassName("saveElement");
+            for(var i=0;i<disableElements.length;i++)disableElements[i].style.display="none";
+        }
         else{
-            alert("asdf");
             dataBinder.swapSaveModes(!dataBinder.localStore.enabled)
             saveButton.innerHTML = "Save to "+(dataBinder.localStore.enabled?"localStorage":"cookies");
         }
