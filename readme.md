@@ -22,11 +22,11 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Popular Javascript plugin injection
 1. Hot-swapping between a real console and DOM Console
 1. A text-field for executing longer code.
+1. Temporary script Storage (**Note:** *Based on tests, Nintendo 3DS doesn't support client-side cookies for some reason... Therefore, storing ANYTHING in general on 3DS will not work atm*)
 
 ### In the works
 1. `console.table`
 1. `console.group`
-1. Temporary script Storage
 
 ### Dream features
 **These are features I can't implement at this time, due to various reasons (e.g backend required, lack of legacy browser support)**
