@@ -55,13 +55,17 @@ It should help If you want to experiment with things browsers can or cannot do.
         <!--This is output from our pseudo console-->
         <div id="domConsole"></div><br>
         <div id="scriptFieldContainer" style='display:none'>
-          <textarea id='scriptField' type="text" placeholder="Write longer code here. You can save it for later by clicking a 'Save' button"></textarea><br>
+          <textarea id='scriptField' type="text" placeholder="Write longer code here. You can save it for later by selecting a location and clicking 'Save'"></textarea><br>
           <button onclick='(Function(scriptField.value)());'>Run</button>
-          <input id='scriptName'><button onclick='localStoreSave()' class='localStorage'>Save to localStorage</button>
-          <span style="margin-left:20px" class='localStorage'>
-              <select id='scriptLSCode'></select> localStorage <button onclick="lsDeleteCurrItem()"">(Delete)</button>
-          </span>
+          <input id='scriptName'><button onclick='dataBinder.getActiveMode().save()' id='saveButton'>Save</button>
+
+              <span id='snippetSelectContainer'></span> <button onclick="dataBinder.getActiveMode().deleteEntry()">Delete</button>
+            <span id='saveMethodContainer' style='display:none'>
+                <input type="radio" name='saveMethod' onchange='dataBinder.swapSaveModes(true)'> Cookies
+                <input type="radio" name='saveMethod' checked onchange='dataBinder.swapSaveModes(false)'> localStorage
+            </span>
         </div>
+
 
         <input id='commandLine' placeholder=">" style="width:100%;font-family:consolas,monospace,Arial, Helvetica, sans-serif" onkeydown="">
         <button onclick="commandLine.onkeydown({key:'Enter'})">Execute</button>
@@ -89,6 +93,7 @@ It should help If you want to experiment with things browsers can or cannot do.
         Arrow functions
         let
         pre-assigned arguments (e.g "function(myArg = 1234)")
+        3DS javascript also isn't as forgiving with reserved keywords (e.g delete)
 
         Therefore, these nice things won't be used for creating the console :(
         */
@@ -278,60 +283,162 @@ It should help If you want to experiment with things browsers can or cannot do.
             jsEditButton.innerHTML = (offOn?"Close":"Open")+" JavaScript editor";
         }
 
-        function localStoreSave(){
-            if(typeof(Storage) == "undefined" ) alert("This browser on "+navigator.platform+" does not support localStorage...");
-            else{
-                scriptName.value = scriptName.value.replace(".","_");
-                localStorage.setItem('domConsole.'+scriptName.value,scriptField.value);
-                var newSave = true;
-                //Look for the id within the select tag, if it doesn't exist, create another one and set it as the current option
-                for(var i=0;i<scriptLSCode.children.length;i++){
-                    if(scriptLSCode.children[i].innerHTML == scriptName.value ){
-                        scriptLSCode.selectedIndex = i;
-                        newSave = false;
-                        break;
+
+        var cookieStuff = {
+            //A place where decoded cookies within domConsole.* live. (To save time retrieving stuff)
+            cookieCodeCollection:{},
+            //A legacy port of my cookie formula :P
+            cookieSearch:function(regex){
+                var result = document.cookie.split(";").find(function(e){ return regex.test(e)});
+                if(result) return result.split("=")[1];
+            },
+            //A new algorhythm to get multiple cookies with similar names (e.g pseudo namespaces like I'm doing)
+            getCookiesByRegex:function(regex){
+                var cookieList = document.cookie.split(";");
+                var results = {};
+                cookieList.forEach(function(e){
+                    if(regex.test(e)){
+                        var keyVal = e.split("=");
+                        results[keyVal[0]] = keyVal[1];
                     }
+                });
+                return results;
+            }
+        }
+
+        function setupSave(context){
+            scriptName.value = scriptName.value.replace(".","_");
+            //Look for the id within the select tag, if it doesn't exist, create another one and set it as the current option
+            for(var i=0;i<context.snippetSelect.children.length;i++){
+                if(context.snippetSelect.children[i].innerHTML == scriptName.value ){
+                    context.snippetSelect.selectedIndex = i;
+                    return false;
                 }
-                if(newSave){
-                    var save  = document.createElement("option");
-                    save.value = 'domConsole.'+scriptName.value;
-                    save.innerHTML = scriptName.value;
-                    scriptLSCode.appendChild(save);
-                    scriptLSCode.selectedIndex = scriptLSCode.children.length-1;
+            }
+            return true;
+        }
+
+        function makeNewSave(context){
+            var save  = document.createElement("option");
+            save.value = 'domConsole.'+scriptName.value;
+            save.innerHTML = scriptName.value;
+            context.snippetSelect.appendChild(save);
+            context.snippetSelect.selectedIndex = context.snippetSelect.children.length-1;
+        }
+
+        var dataBinder = {
+            saveMode: false, //true for cookies, and false for localStorage
+            getActiveMode:function(){return this.saveMode?this.cookies:this.localStore},
+            swapSaveModes:function(cookiesLocalStore){
+                this.saveMode = cookiesLocalStore;
+                if(snippetSelectContainer.children.length) snippetSelectContainer.removeChild(snippetSelectContainer.children[0]);
+                snippetSelectContainer.appendChild((cookiesLocalStore?this.cookies:this.localStore).snippetSelect);
+                (cookiesLocalStore?this.cookies:this.localStore).snippetSelect.selectedIndex = -1;
+            },
+            localStore:{
+                enabled:false,
+                snippetSelect:document.createElement("select"),
+                save:function(){
+                    if(!this.enabled) alert("This browser on "+navigator.platform+" does not support localStorage...");
+                    else{
+                        var newSave = setupSave(dataBinder.localStore);
+                        localStorage.setItem('domConsole.'+scriptName.value,scriptField.value);
+                        if(newSave) makeNewSave(dataBinder.localStore);
+                    }
+                },
+                pageLoad:function(){
+                    if(typeof(Storage) != "undefined" ){
+                        this.enabled = true;
+                        var keyIndex = 0;
+                        while (localStorage.key(keyIndex) !==null){
+                            if(/domConsole.*/.test(localStorage.key(keyIndex))){
+                                var newKey = document.createElement("option");
+                                newKey.value = localStorage.key(keyIndex);
+                                newKey.innerHTML = localStorage.key(keyIndex).split(".")[1];
+                                this.snippetSelect.appendChild(newKey);
+                            }
+                            keyIndex++;
+                        }
+                    }
+                    else{
+                        var hideThings = document.getElementsByClassName("localStorage");
+                        for(var i=0;i<hideThings.length;i++)
+                            hideThings[i].style.display = "none";
+                    }
+                },
+                deleteEntry:function(){
+                    var targetElement = this.snippetSelect.children[this.snippetSelect.selectedIndex];
+                    delete localStorage[targetElement.value];
+                    this.snippetSelect.removeChild(targetElement);
+                    this.snippetSelect.selectedIndex = -1;
+                }
+            },
+            cookies:{
+                enabled:false,
+                snippetSelect:document.createElement("select"),
+                pageLoad:function(){
+                    //We first make a test cookie. They're designed for server communication, so if the user is just viewing this file standalone, it won't work.
+                    document.cookie = "cookiesWork=1;path=/";
+                    if(cookieStuff.cookieSearch(/cookiesWork/)){
+                        this.enabled = true;
+                        document.cookie = "cookiesWork=;expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+                        var targetSelect = this.snippetSelect;
+                        //Load code from the cookies:
+                        cookieStuff.cookieCodeCollection = cookieStuff.getCookiesByRegex(/domConsole.*/);
+                        Object.keys(cookieStuff.cookieCodeCollection).forEach(function(e){
+                            var newKey = document.createElement("option");
+                            newKey.value = e;
+                            newKey.innerHTML = e.split(".")[1];
+                            targetSelect.appendChild(newKey);
+                        });
+                    }
+                },
+                save:function(){
+                    if(!this.enabled)alert("Cookies don't work from just this file alone. Upload this file to a server to make cookies work.");
+                    else{
+                        var newSave = setupSave(dataBinder.cookies);
+                        //Save to cookies, but also save to the cookieCodeCollection
+                        cookieStuff.cookieCodeCollection['domConsole.'+scriptName.value] = encodeURIComponent(scriptField.value);
+                        document.cookie = "domConsole."+scriptName.value+'='+cookieStuff.cookieCodeCollection['domConsole.'+scriptName.value]+";path=/;expires="+(365 * 24 * 60 * 60);
+                        if(newSave) makeNewSave(dataBinder.cookies);
+                    }
+                },
+                deleteEntry:function(){
+                    var targetElement = this.snippetSelect.children[this.snippetSelect.selectedIndex];
+                    delete cookieStuff.cookieCodeCollection[targetElement.value];
+                    document.cookie = targetElement.value+"=;expires=Thu, 01 Jan 1970 00:00:01 GMT;"; //THANK YOU GUY FROM STACKOVERFLOW https://stackoverflow.com/questions/2144386/how-to-delete-a-cookie
+                    this.snippetSelect.removeChild(targetElement);
+                    this.snippetSelect.selectedIndex = -1;
                 }
             }
         }
 
-        scriptLSCode.onchange = function(){
-            var targetElement = scriptLSCode.children[scriptLSCode.selectedIndex]
+        dataBinder.localStore.snippetSelect.onchange = function(){
+            var targetElement = dataBinder.localStore.snippetSelect.children[dataBinder.localStore.snippetSelect.selectedIndex];
             scriptField.value = localStorage.getItem(targetElement.value);
             scriptName.value = targetElement.innerHTML;
         }
 
-        function lsDeleteCurrItem(){
-            var targetElement = scriptLSCode.children[scriptLSCode.selectedIndex];
-            delete localStorage[targetElement.value];
-            scriptLSCode.removeChild(targetElement);
-            scriptLSCode.selectedIndex = -1;
+        dataBinder.cookies.snippetSelect.onchange = function(){
+            var targetElement = dataBinder.cookies.snippetSelect.children[dataBinder.cookies.snippetSelect.selectedIndex];
+            scriptField.value = decodeURIComponent(cookieStuff.cookieCodeCollection[targetElement.value]);
+            scriptName.value = targetElement.innerHTML;
         }
 
         //When the page loads, Look through cookies and localStorage to find code snippets:
-        if(typeof(Storage) != "undefined" ){
-            var keyIndex = 0;
-            while (localStorage.key(keyIndex) !==null){
-                if(/domConsole.*/.test(localStorage.key(keyIndex))){
-                    var newKey = document.createElement("option");
-                    newKey.value = localStorage.key(keyIndex);
-                    newKey.innerHTML = localStorage.key(keyIndex).split(".")[1];
-                    scriptLSCode.appendChild(newKey);
-                }
-                keyIndex++;
-            }
+        //Local storage:
+        dataBinder.localStore.pageLoad();
+        //Cookies are next. this isn't the ideal way to save code, but it's the only way on many old browsers without some kind of account system.
+        dataBinder.cookies.pageLoad();
+        if(dataBinder.cookies.enabled && dataBinder.localStore.enabled){
+            alert("hello?");
+            saveMethodContainer.style.display="";
+            dataBinder.swapSaveModes(false);
         }
         else{
-            var hideThings = document.getElementsByClassName("localStorage");
-            for(var i=0;i<hideThings.length;i++)
-                hideThings[i].style.display = "none";
+            alert("asdf");
+            dataBinder.swapSaveModes(!dataBinder.localStore.enabled)
+            saveButton.innerHTML = "Save to "+(dataBinder.localStore.enabled?"localStorage":"cookies");
         }
 
         swapConsoles(true);
