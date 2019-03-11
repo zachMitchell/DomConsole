@@ -17,6 +17,7 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. `console.warn`
 1. `console.error`
 1. `console.clear`
+1. `console.table`
 1. Similar input methods to a developer console (F12 on Chrome)
 1. Variable initiation
 1. Popular Javascript plugin injection
@@ -25,7 +26,6 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Temporary script Storage (**Note:** *Based on tests, Nintendo 3DS doesn't support client-side cookies for some reason... Therefore, storing ANYTHING in general on 3DS will not work atm*)
 
 ### In the works
-1. `console.table`
 1. `console.group`
 
 ### Dream features
