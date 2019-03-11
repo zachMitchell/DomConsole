@@ -23,7 +23,7 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Popular Javascript plugin injection
 1. Hot-swapping between a real console and DOM Console
 1. A text-field for executing longer code.
-1. Temporary script Storage (**Note:** *Based on tests, Nintendo 3DS doesn't support client-side cookies for some reason... Therefore, storing ANYTHING in general on 3DS will not work atm*)
+1. Temporary script Storage
 
 ### In the works
 1. `console.group`
@@ -33,7 +33,9 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Cloud storage (Preferrably [solid pod](https://inrupt.com/solid))
 
 ## Issues
-Not all errors will appear in DOM Console. This is because `console.error` is not used when running a traceback on web browsers. I could be wrong on this, but until then, error messages only run if manually created by the developer (`console.error()`);
+* Not all errors will appear in DOM Console. This is because `console.error` is not used when running a traceback on web browsers. I could be wrong on this, but until then, error messages only run if manually created by the developer (`console.error()`);
+
+* I get mixed results with cookies on Nintendo 3DS. Depending on the server you run it on, cookies may or may not work... (As of this writing, it works through the github.io address)
 
 ## Contributing
 This project is open to external contributions. It is a spare-time project, so I'm happy with anyone dabbling with it.
