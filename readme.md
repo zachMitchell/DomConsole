@@ -8,6 +8,11 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 
 ## USAGE
 *To access this page without downloading it, visit (https://zachmitchell.github.io/DomConsole)*
+
+ **OR**, If you happen to have a qrCode scanner, try this! :D
+
+![qrCode](https://i.imgur.com/gdW4rwg.png)
+
 * The text field on the bottom is your command line! Type in whatever, and returned elements enter the pseudo console above
 * That dashed square on top is `#sandbox`. You can place your html elements up there.
 
