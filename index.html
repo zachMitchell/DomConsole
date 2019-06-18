@@ -63,7 +63,7 @@ It should help If you want to experiment with things browsers can or cannot do.
         <div id="domConsole"></div><br>
         <div id="scriptFieldContainer" style='display:none'>
           <textarea id='scriptField' type="text" placeholder="Write longer code here. You can save it for later by selecting a location and clicking 'Save'"></textarea><br>
-          <button onclick='(Function(scriptField.value)());'>Run</button>
+          <button onclick='try{(Function(scriptField.value)());}catch(e){console.error(e)}'>Run</button>
           <input id='scriptName' class='saveElement'><button onclick='dataBinder.getActiveMode().save()' id='saveButton' class='saveElement'>Save</button>
           <span id='snippetSelectContainer'></span>
           <button onclick="dataBinder.getActiveMode().deleteEntry()" class='saveElement'>Delete</button>
@@ -212,7 +212,7 @@ It should help If you want to experiment with things browsers can or cannot do.
             //Finally:Take a peak to see what version of the console is being called:
             if(domConsole.children.length >= logLimit.value && logLimit.value!=0) domConsole.removeChild(domConsole.children[0]);
             domConsole.innerHTML+="<div class='log"+(mode=="warn"?" warn":mode=="error"?" error":"")+"'>"+resultStr+"</div>";
-            if(scrollBottomCheck.checked) domConsole.scrollTo(0,domConsole.scrollHeight);
+            if(scrollBottomCheck.checked && domConsole.scrollTo) domConsole.scrollTo(0,domConsole.scrollHeight);
         }
 
         //Store the original functions here, as well as the DomConsole replacements:
@@ -351,11 +351,18 @@ It should help If you want to experiment with things browsers can or cannot do.
         //DOM configuration:
         commandLine.onkeydown = function(){
             if(arguments[0].key=='Enter'){
-            if(/console.clear()/.test(this.value)) eval(this.value); //This is reundant :P
-            else if(this.value!="") console.log( eval(this.value) );
-            if(commandIndex!=commandHistory.length-1 || commandIndex == 0) commandHistory.push(this.value); //Don't write another copy of a command if it doesn't change.
-            this.value = "";
-            commandIndex = commandHistory.length;
+                var val = this.value; //Storing here to throw an exception if needed...
+                this.value = "";
+                if(commandIndex!=commandHistory.length-1 || commandIndex == 0) commandHistory.push(val); //Don't write another copy of a command if it doesn't change.
+                commandIndex = commandHistory.length;
+
+                try{
+                    if(/console.clear()/.test(val)) eval(val); //This is reundant :P
+                    else if(val!="") console.log( eval(val) );
+                }
+                catch(e){
+                    console.error(''+e);
+                }
             }
             else{
                 var arrows = false;

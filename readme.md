@@ -33,7 +33,8 @@ As of right now, I don't intend to re-create *all* console functions. Rather, fu
 1. Cloud storage (Preferrably [solid pod](https://inrupt.com/solid))
 
 ## Issues
-* Not all errors will appear in DOM Console. This is because `console.error` is not used when running a traceback on web browsers. I could be wrong on this, but until then, error messages only run if manually created by the developer (`console.error()`);
+* ~~Not all errors will appear in DOM Console. This is because `console.error` is not used when running a traceback on web browsers. I could be wrong on this, but until then, error messages only run if manually created by the developer (`console.error()`);~~
+    * Fixed this [I learned something new today!]. The only limitation is that the errors that are caught are commands launched from the domConsole. (bugs from domConsole itself won't be logged...)
 
 * I get mixed results with cookies on Nintendo 3DS. Depending on the server you run it on, cookies may or may not work... (As of this writing, it works through the github.io address)
 
